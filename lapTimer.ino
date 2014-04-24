@@ -14,26 +14,26 @@ int driverNumber = 1;
 float startLap = 0.0;
 
 void setup() {
-  lcd.begin(16,2);
+  lcd.begin(16,2); // initize an lcd with specefied demensions (in characters)
   lcd.print("Start"); //print start in upper left
   lcd.setCursor(0,1); // mv cursor to second line
   lcd.print("Driver: "); //print driver on second line
   lcd.print(driverNumber);
-  sd.begin(chipSelect, SPI_HALF_SPEED);
-  if(!lapTimes.open("lapTimes.txt", O_RDWR | O_CREAT | O_AT_END)) {
+  sd.begin(chipSelect, SPI_HALF_SPEED); //make sure the SD card in plugged in
+  if(!lapTimes.open("lapTimes.txt", O_RDWR | O_CREAT | O_AT_END)) { //open the file
     lcd.setCursor(8,1);
-    lcd.print("SD Error");
+    lcd.print("SD Error"); //does not throw an error, it just warns the driver
   }
-  pinMode(buttonPin, INPUT);
-  lapTimes.println("-----New Driver-----");
-  lapTimes.close();
+  pinMode(buttonPin, INPUT); 
+  lapTimes.println("-----New Driver-----"); //write to file that the diver has changed
+  lapTimes.close(); //close the file
 }
 
 void loop() {
-  float time = micros()/1000000.00 - startLap;
-  buttonState = digitalRead(buttonPin);
+  float time = micros()/1000000.00 - startLap; //time since the last signal received
+  buttonState = digitalRead(buttonPin); // check the state of the button and receiver
   receiverState = digitalRead(receiverPin);
-  if (lapNumber > 0) {
+  if (lapNumber > 0) { 
   lcd.setCursor(0,1);
   lcd.print(time,2);
   }
