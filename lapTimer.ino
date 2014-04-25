@@ -1,3 +1,4 @@
+
 // Arduino sketch for the lap timer build for the REVO electic go-kart
 // Author: Riley Chapman
 
@@ -12,8 +13,6 @@ const int buttonPin = 8;
 const int receiverPin = 9;
 int buttonState = HIGH;
 int lastButtonState = HIGH;
-int receiverState = HIGH;
-int lastReceiverState = HIGH;
 int firstLapStarted = LOW;
 int driverNumber = 1;
 float startLap = 0.0;
@@ -23,6 +22,11 @@ long lastDebounceTime = 0;
 long debounceDelay = 50; // increase if output flickers
 long displayLapDelay = 30000; //microseconds 
 int lapNumberToDisplay, lapNumberDisplayed = 0;
+int highpulse = 0, lowpulse = 0, token = 0;
+#define maxHighPulse 2000 //time till reset tokens in the event of a false positive
+#define maxLowPulse 28 //the maximum pulse count we need
+#define minLowPulse 18 //the minimum pulse count we need
+#define resolution 20 //take a reading from the receiver every 20 microseconds
 
 
 
@@ -57,17 +61,26 @@ void loop() {
   }
   
   // The Receiver Interface
-  int receiverReading= digitalRead(receiverPin);
-  if (receiverReading != lastReceiverState && receiverReading == LOW) {
-    if ((millis() - lastReceiverTrigger) > receiverTriggerDelay) {
-      receiverState = LOW;
-      lastReceiverTrigger = millis(); //start the triggered receiver timer
-    }
-  } 
-  
+  int receiverState = digitalRead(receiverPin);
+  if (receiverState == HIGH){ //no beam is being received
+    highpulse++;
+    delayMicroseconds(resolution); //wait some time
+  }
+  if (receiverState == LOW) { //a beam is being received
+    lowpulse++;
+    delayMicroseconds(resolution); //wait some time
+  }
+  if (highpulse > maxHighPulse) { // we have an incorrect signal
+    token = 0; //clear the tokens
+    highpulse = 0; //reset the highpulse
+  }
+  if (lowpulse > minLowPulse && lowpulse < maxLowPulse){
+    //we have the pulse length we expected
+    token ++; //we need 3 tokens to trigger
+  }
   
   // If we just crossed the finish line
-  if (receiverState == LOW) {
+  if (token == 3) {
     if(!lapTimes.open("lapTimes.txt", O_RDWR | O_CREAT | O_AT_END)) {
       lcd.setCursor(8,1);
       lcd.print("SD Error"); 
@@ -114,9 +127,7 @@ void loop() {
   }
   
   lastButtonState = buttonReading;
-  lastReceiverState = receiverReading;
   buttonState = HIGH; //Only let the states be triggered for one loop
-  receiverState = HIGH;
 }
 
 String get_ready_to_print(int lapNumber,float time) {
