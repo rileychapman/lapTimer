@@ -45,6 +45,7 @@ void setup() {
 void loop() {
   float time = micros()/1000000.00 - startLap; //time since the last signal received
   
+  //The Button Interface
   int buttonReading = digitalRead(buttonPin); // check the state of the button
   if (buttonReading != lastButtonState) lastDebounceTime = millis();
   if ((millis() - lastDebounceTime) > debounceDelay) {
@@ -55,6 +56,7 @@ void loop() {
     } 
   }
   
+  // The Receiver Interface
   int receiverReading= digitalRead(receiverPin);
   if (receiverReading != lastReceiverState && receiverReading == LOW) {
     if ((millis() - lastReceiverTrigger) > receiverTriggerDelay) {
@@ -71,8 +73,10 @@ void loop() {
       lcd.print("SD Error"); 
     }
     if (lapNumber == 0) {
+      // If we corssed the start line
       startLap = micros()/1000000.00;
       lapNumber += 1;
+      lapTimes.println(String("Driver Number: " + String(driverNumber)));
     }
     else {
       startLap = micros()/1000000.00;
@@ -101,6 +105,13 @@ void loop() {
     lapNumberDisplayed = lapNumberToDisplay;
   }
     
+  //Driver select
+  if (lapNumber == 0){
+    if (buttonState == LOW) driverNumber ++;
+    lcd.setCursor(0,1); // mv cursor to second line
+    lcd.print("Driver: "); //print driver on second line
+    lcd.print(driverNumber);
+  }
   
   lastButtonState = buttonReading;
   lastReceiverState = receiverReading;
