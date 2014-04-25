@@ -17,10 +17,13 @@ int lastReceiverState = HIGH;
 int firstLapStarted = LOW;
 int driverNumber = 1;
 float startLap = 0.0;
-float lastReceiverTrigger = 10000000; //bigger than necessary
+float lastReceiverTrigger = 10000000; //bigger than necessary so it will trigegr the first time
 int receiverTriggerDelay = 3000; // milliseconds (3 seconds) the minnimum lap time
 long lastDebounceTime = 0;
 long debounceDelay = 50; // increase if output flickers
+long displayLapDelay = 30000; //microseconds 
+int lapNumberToDisplay, lapNumberDisplayed = 0;
+
 
 
 void setup() {
@@ -61,11 +64,8 @@ void loop() {
   } 
   
   
-  if (lapNumber > 0) { //constantly update the time
-  lcd.setCursor(0,1);
-  lcd.print(time,2);
-  }
-  if (receiverState == LOW || buttonState == LOW) {
+  // If we just crossed the finish line
+  if (receiverState == LOW) {
     if(!lapTimes.open("lapTimes.txt", O_RDWR | O_CREAT | O_AT_END)) {
       lcd.setCursor(8,1);
       lcd.print("SD Error"); 
@@ -79,15 +79,32 @@ void loop() {
       lapTimes.println(get_ready_to_print(lapNumber,time));
       lapNumber += 1;
     } 
-    lapTimes.close();
-    delay(3000);
+    lapTimes.close(); 
+  }
+  
+  // Update the Time on screen
+  if (lapNumber > 0 && (((millis()- lastReceiverTrigger) < displayLapDelay) || lapNumber == 1)) { 
+    //constantly update the time 
+    // unless were displaying the time at the end of a lap *
+    // *with the exeption of the start
+    lcd.setCursor(0,1);
+    lcd.print(time,2);
+  }
+  
+  // Update the Lap Number on screen
+  if (( millis()- lastReceiverTrigger) < displayLapDelay) lapNumberToDisplay = lapNumber-1;
+  else lapNumberToDisplay = lapNumber;
+  if (lapNumberToDisplay != lapNumberDisplayed && lapNumber > 0) {
     lcd.setCursor(0,0);
     lcd.print("Lap ");
-    lcd.print(lapNumber);  
+    lcd.print(lapNumberToDisplay); //update the display only if necessary
+    lapNumberDisplayed = lapNumberToDisplay;
   }
+    
+  
   lastButtonState = buttonReading;
   lastReceiverState = receiverReading;
-  buttonState = HIGH;
+  buttonState = HIGH; //Only let the states be triggered for one loop
   receiverState = HIGH;
 }
 
