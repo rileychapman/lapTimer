@@ -13,12 +13,15 @@ const int receiverPin = 9;
 int buttonState = HIGH;
 int lastButtonState = HIGH;
 int receiverState = HIGH;
+int lastReceiverState = HIGH;
 int firstLapStarted = LOW;
 int driverNumber = 1;
 float startLap = 0.0;
+float lastReceiverTrigger = 10000000; //bigger than necessary
+int receiverTriggerDelay = 3000; // milliseconds (3 seconds) the minnimum lap time
 long lastDebounceTime = 0;
-long debounceDelay = 300;
-long timeButtonPushed = 0;
+long debounceDelay = 50; // increase if output flickers
+
 
 void setup() {
   lcd.begin(16,2); // initize an lcd with specefied demensions (in characters)
@@ -39,15 +42,23 @@ void setup() {
 void loop() {
   float time = micros()/1000000.00 - startLap; //time since the last signal received
   
-  buttonReading = digitalRead(buttonPin); // check the state of the button
+  int buttonReading = digitalRead(buttonPin); // check the state of the button
   if (buttonReading != lastButtonState) lastDebounceTime = millis();
-  if ((millis() - lastDebounceTime) > bounceDelay) {
-    if (buttonReading != buttonState) {
-      buttonState = buttonReading;
-      if (buttonState == LOW) timeButtonPush = millis();
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+   //if the reading had been there for long enough 
+    if (buttonReading != lastButtonState && buttonReading == LOW) {
+        //if the button was just pressed
+        buttonState = LOW; // change the state for one loop
     } 
-   
-  receiverState = digitalRead(receiverPin);
+  }
+  
+  int receiverReading= digitalRead(receiverPin);
+  if (receiverReading != lastReceiverState && receiverReading == LOW) {
+    if ((millis() - lastReceiverTrigger) > receiverTriggerDelay) {
+      receiverState = LOW;
+      lastReceiverTrigger = millis(); //start the triggered receiver timer
+    }
+  } 
   
   
   if (lapNumber > 0) { //constantly update the time
@@ -75,6 +86,9 @@ void loop() {
     lcd.print(lapNumber);  
   }
   lastButtonState = buttonReading;
+  lastReceiverState = receiverReading;
+  buttonState = HIGH;
+  receiverState = HIGH;
 }
 
 String get_ready_to_print(int lapNumber,float time) {
