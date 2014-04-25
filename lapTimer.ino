@@ -1,3 +1,6 @@
+// Arduino sketch for the lap timer build for the REVO electic go-kart
+// Author: Riley Chapman
+
 #include <LiquidCrystal.h>
 #include <SdFat.h>
 const int chipSelect = 10;
@@ -7,11 +10,15 @@ int lapNumber = 0;
 LiquidCrystal lcd(7,6,5,4,3,2);
 const int buttonPin = 8;
 const int receiverPin = 9;
-int buttonState = 1;
-int receiverState = 1;
-int firstLapStarted = 0;
+int buttonState = HIGH;
+int lastButtonState = HIGH;
+int receiverState = HIGH;
+int firstLapStarted = LOW;
 int driverNumber = 1;
 float startLap = 0.0;
+long lastDebounceTime = 0;
+long debounceDelay = 300;
+long timeButtonPushed = 0;
 
 void setup() {
   lcd.begin(16,2); // initize an lcd with specefied demensions (in characters)
@@ -31,9 +38,19 @@ void setup() {
 
 void loop() {
   float time = micros()/1000000.00 - startLap; //time since the last signal received
-  buttonState = digitalRead(buttonPin); // check the state of the button and receiver
+  
+  buttonReading = digitalRead(buttonPin); // check the state of the button
+  if (buttonReading != lastButtonState) lastDebounceTime = millis();
+  if ((millis() - lastDebounceTime) > bounceDelay) {
+    if (buttonReading != buttonState) {
+      buttonState = buttonReading;
+      if (buttonState == LOW) timeButtonPush = millis();
+    } 
+   
   receiverState = digitalRead(receiverPin);
-  if (lapNumber > 0) { 
+  
+  
+  if (lapNumber > 0) { //constantly update the time
   lcd.setCursor(0,1);
   lcd.print(time,2);
   }
@@ -55,9 +72,9 @@ void loop() {
     delay(3000);
     lcd.setCursor(0,0);
     lcd.print("Lap ");
-    lcd.print(lapNumber);
-     
+    lcd.print(lapNumber);  
   }
+  lastButtonState = buttonReading;
 }
 
 String get_ready_to_print(int lapNumber,float time) {
