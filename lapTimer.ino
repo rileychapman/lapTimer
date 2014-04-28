@@ -31,6 +31,8 @@ int highpulse = 0, lowpulse = 0, token = 0;
 
 
 void setup() {
+  Serial.begin(9600);
+  Serial.println("startup");
   lcd.begin(16,2); // initize an lcd with specefied demensions (in characters)
   lcd.print("Start"); //print start in upper left
   lcd.setCursor(0,1); // mv cursor to second line
@@ -57,6 +59,7 @@ void loop() {
     if (buttonReading != lastButtonState && buttonReading == LOW) {
         //if the button was just pressed
         buttonState = LOW; // change the state for one loop
+        Serial.print('button pressed, button state changed to LOW');
     } 
   }
   
@@ -77,6 +80,8 @@ void loop() {
   if (lowpulse > minLowPulse && lowpulse < maxLowPulse){
     //we have the pulse length we expected
     token ++; //we need 3 tokens to trigger
+    lastReceiverTrigger = millis();
+    Serial.println("3 tokens");
   }
   
   // If we just crossed the finish line
@@ -97,6 +102,7 @@ void loop() {
       lapNumber += 1;
     } 
     lapTimes.close(); 
+    token = 0;
   }
   
   // Update the Time on screen
